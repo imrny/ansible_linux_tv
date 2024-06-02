@@ -3,8 +3,8 @@
 [lbs]
 192.168.1.181
 [apps]
-192.168.1.182
-192.168.1.183
-192.168.1.185
+192.168.1.182 apache_package=httpd php_package=php
+192.168.1.183 apache_package=httpd php_package=php
+192.168.1.185 apache_package=apache2 php_package=libapache2-mod-php
 [dbs]
 192.168.1.184

@@ -2,32 +2,22 @@
 - hosts: apps
   become: true
   tasks:
-  - name: install apache2 and php packages and update repository index
-    apt:
+  - name: install apache and php packages and update repository index
+    package:
       name:
-        - apache2
-        - libapache2-mod-php
+        - "{{ apache_package }}"
+        - "{{ php_package }}"
       state: latest
       update_cache: yes
-    when: ansible_distribution == "Ubuntu"
 
-  - name: install apache and php packages and upate repository index
-    dnf:
-      name:
-        - httpd
-        - php
-      state: latest
-      update_cache: yes
-    when: ansible_distribution == "CentOS"
-
-  - name: start httpd service
+  - name: start httpd service on CentOS
     systemd:
       name: httpd
       state: started
       enabled: yes
     when: ansible_distribution == "CentOS"
 
-  - name: enable port 80
+  - name: enable port 80 on CentOS
     ansible.posix.firewalld:
       zone: public
       port: 80/tcp

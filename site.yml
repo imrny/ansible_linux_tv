@@ -6,128 +6,33 @@
     tags: always
     dnf:
       update_cache: yes
-      changed_when: false
+    changed_when: false
     when: ansible_distribution == "CentOS"
 
   - name: install updates (Ubuntu)
     tags: always
     apt:
       update_cache: yes
-      changed_when: false
+    changed_when: false
     when: ansible_distribution == "Ubuntu"
 
 - hosts: all
   become: true
-  tasks:
-  - name: add ssh public key for simone
-    tags: always
-    authorized_key:
-      user: simone
-      key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCTvOnj5ZRMQRo6Aavwn6LPf5+3rqhjA6E7WjXGOGE16bSmKnLY3l3Ov0KzKpMg94AxfEvsGHB1nXoTdIrfBuTcaMBIIdem4IHhHjeWzCOD4XolVW88+c49j+P4NkNnxZly9x5UDSda9ngV18/TchzRI//lO4vYs9AsO7t3lNqRJmTjC72TmnV7WuTk+31q+GhNLhx3Uq1Y0a8Q/mGotwIn8DIL/kBX6cPb/fmJAiKheKeHTHIA8oouou1aTt/jy6fxaZDRybCQ7qhXVmq3CS7qOv/g3dYMpufaAnvDK9puZA23wmZ3KIfq01Hcy9kmLVdHTXqirEK5JyzuNPdxBuy9fNQ3raahIL+KjLCKCymLnf3RqIblYGce4CpIa45+hpqsYlM4gMY+nzrVo9bpCAuHjyG3xyGsx1isQLGP3Spjl9nPXjjj1pYGriFYd82NgvkdoUpAdMT5AqEPadL4OtellMw9N4DwELDtSCOh3W9IJXZmV9ZPkr79lPhDH7ml1is= devops@control
-
-- hosts: apps
-  become: true
-  tasks:
-  - name: install apache and php packages on  Ubuntu servers
-    tags: apache,apache2,ubuntu
-    apt:
-      name:
-        - apache2
-        - libapache2-mod-php
-      state: latest
-    when: ansible_distribution == "Ubuntu"
-    register: apache2
-
-  - name: install apache and php packages on CentOS servers
-    tags: apache,httpd,centos
-    dnf:
-      name:
-        - httpd
-        - php
-      state: latest
-    when: ansible_distribution == "CentOS"
-    register: apache
-
-  - name: copy default html index file for the site
-    tags: apache,httpd,centos
-    copy:
-      src: default_site.html
-      dest: /var/www/html/index.html
-      owner: root
-      group: root
-      mode: 0644
-    when: apache2.changed or apache.changed
-
-  - name: start httpd service on CentOS
-    tags: apache,httpd,centos
-    systemd:
-      name: httpd
-      state: started
-      enabled: yes
-    when: ansible_distribution == "CentOS"
-
-  - name: change e-mail address for admin (CentOS)
-    tags: apache,http,centos
-    lineinfile:
-      path: /var/www/html/index.html
-      regexp: ServerAdmin
-      line: ServerAdmin somebody@somewhere.net
-    when: ansible_distribution == "CentOS"
-    register: httpd    # this is a varible to capture the state of the file, changed or not
-
-  - name: restart httpd (CentOS)
-    tags: apache,httpd,centos
-    systemd:
-      name: httpd
-      state: restarted
-    when: httpd.changed    # referencing the register variable
-
-  - name: enable port 80 on CentOS
-    tags: apache,httpd,centos
-    ansible.posix.firewalld:
-      zone: public
-      port: 80/tcp
-      permanent: true
-      state: enabled
-    when: ansible_distribution == "CentOS"
-    register: firewalld
-
-  - name: reload firewalld.service
-    tags: apache,httpd,centos
-    systemd:
-      name: firewalld
-      state: reloaded
-    when: firewalld.changed
-
-- hosts: dbs
-  become: true
-  tasks:
-    - name: install mariadb package (CentOS)
-      tags: centos,mariadb,db
-      dnf:
-        name: mariadb
-        state: latest
-      when: ansible_distribution == "CentOS"
-
-    - name: install mariadb package (Ubuntu)
-      tags: db,mariadb,ubuntu
-      apt:
-        name: mariadb-server
-        state: latest
-      when: ansible_distribution == "Ubuntu"
+  roles:
+    - base
 
 - hosts: admin
   become: true
-  tasks:
-    - name: install unzip
-      package:
-        name: unzip
+  roles:
+    - admin
 
-    - name:  install terraform
-      unarchive:
-        src: https://108.139.47.112/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip
-        dest: /usr/local/bin
-        remote_src: yes
-        mode: 0755
-        owner: root
-        group: root
+- hosts: apps
+  become: true
+  roles:
+    - apps
+
+- hosts: dbs
+  become: true
+  roles:
+    - dbs
+

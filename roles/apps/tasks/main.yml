@@ -1,0 +1,70 @@
+- name: install apache and php packages on  Ubuntu servers
+  tags: apache,apache2,ubuntu
+  apt:
+    name:
+      - apache2
+      - libapache2-mod-php
+    state: latest
+  when: ansible_distribution == "Ubuntu"
+  register: apache2
+
+- name: install apache and php packages on CentOS servers
+  tags: apache,httpd,centos
+  dnf:
+    name:
+      - httpd
+      - php
+    state: latest
+  when: ansible_distribution == "CentOS"
+  register: apache
+
+- name: copy default html index file for the site
+  tags: apache,httpd,centos
+  copy:
+    src: default_site.html
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: 0644
+  when: apache2.changed or apache.changed
+
+- name: start httpd service on CentOS
+  tags: apache,httpd,centos
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
+  when: ansible_distribution == "CentOS"
+
+- name: change e-mail address for admin (CentOS)
+  tags: apache,http,centos
+  lineinfile:
+    path: /var/www/html/index.html
+    regexp: ServerAdmin
+    line: ServerAdmin somebody@somewhere.net
+  when: ansible_distribution == "CentOS"
+  register: httpd    # this is a varible to capture the state of the file, changed or not
+
+- name: restart httpd (CentOS)
+  tags: apache,httpd,centos
+  systemd:
+    name: httpd
+    state: restarted
+  when: httpd.changed    # referencing the register variable
+
+- name: enable port 80 on CentOS
+  tags: apache,httpd,centos
+  ansible.posix.firewalld:
+    zone: public
+    port: 80/tcp
+    permanent: true
+    state: enabled
+  when: ansible_distribution == "CentOS"
+  register: firewalld
+
+- name: reload firewalld.service
+  tags: apache,httpd,centos
+  systemd:
+    name: firewalld
+    state: reloaded
+  when: firewalld.changed

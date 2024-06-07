@@ -21,11 +21,6 @@
   roles:
     - base
 
-- hosts: admin
-  become: true
-  roles:
-    - admin
-
 - hosts: apps
   become: true
   roles:
@@ -36,3 +31,9 @@
   roles:
     - dbs
 
+- hosts: admin
+  become: true
+  roles:
+    - admin
+
+...

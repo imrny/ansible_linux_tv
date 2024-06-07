@@ -7,6 +7,14 @@
     create_home: yes
     shell: /bin/bash
 
+- name: allow simone to run commands as root
+  community.general.sudoers:
+    name: simone-do-as-root
+    state: present
+    user: simone
+    runas: root
+    commands: ALL
+
 - name: add ssh public key for simone
   tags: always
   authorized_key:
